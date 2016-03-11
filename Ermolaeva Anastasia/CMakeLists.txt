@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+project( Hough )
+find_package( OpenCV REQUIRED )
+add_executable( Hough Hough.cpp )
+target_link_libraries( Hough  ${OpenCV_LIBS} )
