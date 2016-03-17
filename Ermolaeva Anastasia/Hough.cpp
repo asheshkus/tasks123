@@ -1,4 +1,3 @@
-#include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
@@ -11,65 +10,90 @@
 using namespace cv;
 using namespace std;
 
-
 class Hough 
 {
+	
 	public:
-		double* houghlines_shift(unsigned char* data, std::vector<double> shifts, int w, int h) 
+		Hough()
 		{
-			img_w = w;
-			img_h = h;
-			float diag = sqrt((double)(w*w+ h*h));
-			double center_x = w/2;
-			double center_y = h/2;
-			int acc_h = round(diag);
-			int acc_w = 180;
-			double* acc = (double*)calloc(acc_h * acc_w, sizeof(double));
-			for (int y=0; y < h; y++)
-			{
-				for (int x=0; x < w; x++)
-				{
-						if (data[y*w+x] > 0) 
-						{
-							for (int t = 0; t < acc_w; t++)
-							{
-								double r = ( ((double)(x - center_x)) * cos((double)t * DEG2RAD)) + (((double)(y-center_y)) * sin((double)t * DEG2RAD));
-								
-								acc[(int)((r + diag/2.0f) * acc_w + t)] += data[y*w+x];
-							}
-						}
-				}
-			}
+			sinCache = std::vector<double>(180);
+			cosCache = std::vector<double>(180);			
+			for (int t = 0; t < 180; t++) 
+			{ 
+				
+				double theta = t* DEG2RAD;
+	            sinCache[t] = sin(theta); 
+	            cosCache[t] = cos(theta); 
+	        } 
+		}
 
-			/*double max_val = -10000;
-			for (int r = 0; r < acc_h; r++)
+		int* houghlines_shift(unsigned char* data, std::vector<double> shifts, int w, int h) 
+		{
+			int max_dim = h;
+			if (w > max_dim)
+			{	
+				max_dim = w;
+			}
+ 			int houghtHeight = int(sqrt((double)(w*w+h*h))
+        	int doubleHeight = 2 * houghHeight; 
+ 			int houghWidth = 180;
+        	
+        	int* houghArray = (int*)calloc(doubleHeight*houghWidth, sizeof(int)); 
+			
+			int center_x = w/2;
+			int center_y = h/2;
+			for (int x = 0; x < w; x++) 
+			{ 
+	            for (int y = 0; y < h; y++) 
+				{ 
+	            
+	                if (data[y*w+x] > 0) 
+					{ 
+	                    for (int t = 0; t < houghWidth; t++) 
+						{ 
+            				int r = (int) (((x - center_x) * cosCache[t]) + ((y - center_y) * sinCache[t])); 
+ 
+				            r += houghHeight; 
+ 
+				            if (r < 0 || r >= doubleHeight) continue; 
+ 
+            				houghArray[r*houghWidth + t] += (int)data[y*w+x]; 
+ 
+        				} 
+	                } 
+	            } 
+	        } 
+	
+			int max_val = -10000;
+			for (int r = 0; r < doubleHeight; r++)
 			{
-				for (int t = 0; t < acc_w; t++) 
+				for (int t = 0; t < houghWidth; t++) 
 				{
-					if (acc[r*acc_w+t] > max_val)
+					if (houghArray[r*houghWidth + t] > max_val)
 					{
-						max_val = acc[r*acc_w+t];
+						max_val = houghArray[r*houghWidth + t];
 					}
 				}
 
 			}
 			
-			*/
-			for (int r = 0; r < acc_h; r++)
+			cout << max_val << "\n";
+			for (int r = 0; r < doubleHeight; r++)
 			{
-				for (int t = 0; t < acc_w; t++) 
+				for (int t = 0; t < houghWidth; t++) 
 				{
-					acc[r*acc_w+acc_h] = int(acc[r*acc_w+acc_h])%255;
+					houghArray[r*houghWidth+t] = (int)(houghArray[r*houghWidth+t] * 255.0f/ max_val);
+				
 				}
 
 			}
 			
-			return acc;
+			return houghArray;
 		}
 
 	private:
-		int img_w;
-		int img_h;
+		std::vector<double> sinCache;
+		std::vector<double> cosCache;
 };
 
 int main(int argc, char** argv) 
@@ -87,21 +111,21 @@ int main(int argc, char** argv)
 	Hough hough;
 	int w = src.cols;  
 	int h = src.rows;
-	double* new_pic = hough.houghlines_shift(src.data, std::vector<double>(), w, h);
-
-	int acc_h = round(sqrt((double)(w*w+h*h)));
+	int* new_pic = hough.houghlines_shift(src.data, std::vector<double>(), w, h);
 	
+	int max_d = h;
+	if (w > max_d)
+	{	
+		max_d = w;
+	}
+	int hh = (int) ((sqrt(2.0) * max_d) / 2.0); 
+	int acc_h = 2*hh;
 	int acc_w = 180;
-	Mat new_p = Mat(acc_h, acc_w, CV_16U, new_pic);
-	cout << new_p.rows << "\n";
-	cout << new_p.cols << "\n";
-	
+	Mat new_p = Mat(acc_h, acc_w, CV_8U, new_pic);
 	
 	imshow("source", src);
 
 	imshow("new", new_p);
-    
-
     waitKey();
 
     return 0;
