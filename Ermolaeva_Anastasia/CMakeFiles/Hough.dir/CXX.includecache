@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/skye17/tasks123/Ermolaeva_Anastasia/Hough.cpp
+opencv2/highgui/highgui.hpp
+/home/skye17/tasks123/Ermolaeva_Anastasia/opencv2/highgui/highgui.hpp
+opencv2/imgproc/imgproc.hpp
+/home/skye17/tasks123/Ermolaeva_Anastasia/opencv2/imgproc/imgproc.hpp
+iostream
+-
+vector
+-
+cmath
+-
+
