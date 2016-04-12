@@ -36,12 +36,12 @@ class Hough
 			}
 			
 			
- 			double houghHeight = std::sqrt((double)(w*w+h*h))/2;
-        	double doubleHeight = 2 * houghHeight; 
- 			double houghWidth = 180.0;
+ 			int houghHeight = std::sqrt((double)(w*w+h*h))/2;
+        	int doubleHeight = 2 * houghHeight; 
+ 			int houghWidth = 180;
         	
         	int* houghArray = (int*)calloc(doubleHeight*houghWidth, sizeof(int)); 
-			//cout << cosCache[45]<< ", " << sinCache[45] << "\n";
+		
 			double center_x = w/2;
 			double center_y = h/2;
 			for (int x = 0; x < w; x++) 
@@ -57,7 +57,7 @@ class Hough
  
 				            r += houghHeight; 
  
-            				houghArray[(int)(round(r)*180.0) + t] += data[y*w+x]; 
+            				houghArray[(int)(round(r)*180) + t] += data[y*w+x]; 
 
         				} 
 	                } 
@@ -69,9 +69,9 @@ class Hough
 			{
 				for (int t = 0; t < houghWidth; t++) 
 				{
-					if (houghArray[(int)(r*180.0) + t] > max_val)
+					if (houghArray[r*houghWidth + t] > max_val)
 					{
-						max_val = houghArray[(int)(r*180.0) + t];
+						max_val = houghArray[r*houghWidth + t];
 					}
 				}
 
@@ -83,7 +83,7 @@ class Hough
 			{
 				for (int t = 0; t < houghWidth; t++) 
 				{
-					hough_uint[(int)(r*180.0)+t] = (uint8_t)(houghArray[(int)(r*180.0) + t] * 255.0f/ max_val);
+					hough_uint[r*houghWidth + t] = (uint8_t)(houghArray[r*houghWidth + t] * 255.0f/ max_val);
 				
 				}
 
