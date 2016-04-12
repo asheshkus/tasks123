@@ -1,11 +1,16 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
-#include <array>
 #include <iomanip>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+#include <json/json.h>
+
+using namespace std;
 
 // получение матрицы из картинки
-std::array<std::array<double, 16>, 20> get_matrix(const char* filename)
+vector<double> get_matrix(const char* filename)
 {
 	// получаем картинку
 	IplImage* image = cvLoadImage(filename, 0);
@@ -17,13 +22,13 @@ std::array<std::array<double, 16>, 20> get_matrix(const char* filename)
 
 	cv::Mat matr = cv::cvarrToMat(resized_image);
 
-	std::array<std::array<double, 16>, 20> matrix;
+	vector<double> vect;
 
 	for (int i = 0; i < 20; ++i)
 	{
 		for (int j = 0; j < 16; ++j)
 		{
-			matrix[i][j] = ((double)matr.at<uchar>(i, j)) / 255;
+			vect.push_back(((double)matr.at<uchar>(i, j)) / 255);
 		}
 	}
 
@@ -32,22 +37,111 @@ std::array<std::array<double, 16>, 20> get_matrix(const char* filename)
 	cvReleaseImage(&src);
 	cvReleaseImage(&resized_image);
 
-	return matrix;
+	return vect;
+}
+
+void fully_connected_layer(vector<double>& vect, string matrix, string bias)
+{
+	ifstream bias_file(bias);
+	ifstream matrix_file(matrix);
+
+	double d_b;
+	char c;
+
+	vector<double> result;
+
+	while (bias_file >> d_b)
+	{
+		double sum = 0;
+		double d_m;
+		int j = 0;
+		c = ',';
+		while (c == ',' && matrix_file >> d_m)
+		{
+			sum += d_b * vect[j];
+			++j;
+			matrix_file >> c;
+		}
+		bias_file >> c;
+		result.push_back(sum + d_b);
+	}
+
+	vect.clear();
+	vect = result;
+}
+
+void neuron_layer(vector<double>& vect, string function)
+{
+	if (function.compare("tanh") == 0)
+	{
+		for (int i = 0; i < vect.size(); ++i)
+		{
+			vect[i] = tanh(vect[i]);
+		}
+	}
+	else if (function.compare("softmax") == 0)
+	{
+		double sum = 0;
+		for (int i = 0; i < vect.size(); ++i)
+		{
+			vect[i] = exp(vect[i]);
+			sum += vect[i];
+		}
+
+		for (int i = 0; i < vect.size(); ++i)
+		{
+			vect[i] = vect[i] / sum;
+		}
+	}
+}
+
+vector<double> recognize(const vector<double>& vect)
+{
+	ifstream recognizer_file("recognizer.json");
+	Json::Value root;
+	recognizer_file >> root;
+	int number_of_layers = root["recognizer"].get("number_of_layers", 0).asInt();
+
+	const Json::Value layers = root["recognizer"];
+
+	vector<double> result(vect);
+
+	for (Json::Value::const_iterator itr = layers.begin() ; itr != layers.end() ; ++itr)
+	{
+		if (!(itr->isObject()))
+		{
+			break;
+		}
+
+		string type = itr->get("type", "").asString();
+		cout << result[0] << endl;
+
+		if (type.compare("fully_connected") == 0)
+		{
+			fully_connected_layer(result, itr->get("matrix", "").asString(), itr->get("bias", "").asString());
+		}
+		else if (type.compare("neuron") == 0)
+		{
+			neuron_layer(result, itr->get("function", "").asString());
+		}
+		cout << endl;
+	}
+
+	return result;
 }
 
 int main()
 {
-	const char* filename = "l_0_04_0_aaaaa.jpg.jpg";
+	const char* filename = "6_2_03_06_aabmh.jpg.jpg";
+	cout << filename << endl;
 
-	std::array<std::array<double, 16>, 20> matrix = get_matrix(filename);
+	vector<double> vect = get_matrix(filename);
 
-	for (int i = 0; i < 20; ++i)
+	vector<double> result = recognize(vect);
+
+	for (int i = 0; i < result.size(); ++i)
 	{
-		for (int j = 0; j < 16; ++j)
-		{
-			std::cout << std::fixed << matrix[i][j] << " ";
-		}
-		std::cout << std::endl;
+		cout << result[i] << endl;
 	}
 	
 	return 0;
