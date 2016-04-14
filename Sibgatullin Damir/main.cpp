@@ -58,7 +58,7 @@ void fully_connected_layer(vector<double>& vect, string matrix, string bias)
 		c = ',';
 		while (c == ',' && matrix_file >> d_m)
 		{
-			sum += d_b * vect[j];
+			sum += d_m * vect[j];
 			++j;
 			matrix_file >> c;
 		}
@@ -95,7 +95,7 @@ void neuron_layer(vector<double>& vect, string function)
 	}
 }
 
-vector<double> recognize(const vector<double>& vect)
+vector<double> recognize(const vector<double>& vect, string& output_pins)
 {
 	ifstream recognizer_file("recognizer.json");
 	Json::Value root;
@@ -106,7 +106,7 @@ vector<double> recognize(const vector<double>& vect)
 
 	vector<double> result(vect);
 
-	for (Json::Value::const_iterator itr = layers.begin() ; itr != layers.end() ; ++itr)
+	for (Json::Value::const_iterator itr = layers.begin(); itr != layers.end(); ++itr)
 	{
 		if (!(itr->isObject()))
 		{
@@ -114,7 +114,6 @@ vector<double> recognize(const vector<double>& vect)
 		}
 
 		string type = itr->get("type", "").asString();
-		cout << result[0] << endl;
 
 		if (type.compare("fully_connected") == 0)
 		{
@@ -124,8 +123,9 @@ vector<double> recognize(const vector<double>& vect)
 		{
 			neuron_layer(result, itr->get("function", "").asString());
 		}
-		cout << endl;
 	}
+
+	output_pins = root.get("output_pins", "").asString();
 
 	return result;
 }
@@ -133,16 +133,19 @@ vector<double> recognize(const vector<double>& vect)
 int main()
 {
 	const char* filename = "6_2_03_06_aabmh.jpg.jpg";
-	cout << filename << endl;
+	cout << filename << endl << endl;
 
 	vector<double> vect = get_matrix(filename);
 
-	vector<double> result = recognize(vect);
+	string output_pins;
+	vector<double> result = recognize(vect, output_pins);
 
 	for (int i = 0; i < result.size(); ++i)
 	{
-		cout << result[i] << endl;
+		cout << output_pins[i] << ": " << result[i] << endl;
 	}
+
+	cout << endl;
 	
 	return 0;
 }
